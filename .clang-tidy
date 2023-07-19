@@ -2,6 +2,12 @@
 # Enable ALL the things! Except not really
 # misc-non-private-member-variables-in-classes: the options don't do anything
 # modernize-use-nodiscard: too aggressive, attribute is situationally useful
+# Some personal preferences (this is not going to be a serious project anyway)
+# readability-identifier-length: don't really matter
+# cppcoreguidelines-non-private-member-variables-in-classes: i dont want to make getters for protected fields
+# google-build-using-namespace: i'm not using namespace std
+# *-avoid-c-arrays, cppcoreguidelines-pro-bounds-array-to-pointer-decay, hicpp-no-array-decay: libmpv stuff
+# cppcoreguidelines-avoid-magic-numbers: idc
 Checks: "*,\
   -google-readability-todo,\
   -altera-*,\
@@ -11,6 +17,25 @@ Checks: "*,\
   -llvm-include-order,\
   -llvmlibc-*,\
   -modernize-use-nodiscard,\
+  -readability-identifier-length,\
+  -cppcoreguidelines-non-private-member-variables-in-classes,\
+  -google-build-using-namespace,\
+  -*-avoid-c-arrays,\
+  -hicpp-no-array-decay,\
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,\
+  -cppcoreguidelines-pro-type-reinterpret-cast,\
+  -cppcoreguidelines-pro-type-const-cast,\
+  -cppcoreguidelines-avoid-magic-numbers,\
+  -readability-magic-numbers,\
+  -readability-implicit-bool-conversion,\
+  -clang-diagnostic-missing-field-initializers,\
+  -clang-diagnostic-unqualified-std-cast-call,\
+  -readability-function-cognitive-complexity,\
+  -cppcoreguidelines-pro-type-union-access,\
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,\
+  -readability-isolate-declaration,\
+  -bugprone-easily-swappable-parameters,\
+  -fuchsia-multiple-inheritance,\
   -misc-non-private-member-variables-in-classes"
 WarningsAsErrors: ''
 CheckOptions:
