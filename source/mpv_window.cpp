@@ -84,9 +84,9 @@ mpv_window::mpv_window(weak_event_queue queue, const char* path)
     throw runtime_error("unable to observe video-out-params properties");
   }
 
-  mpv_window::update();
   mpv_set_wakeup_callback(
       m_mpv.get(), [](void*) { glfwPostEmptyEvent(); }, nullptr);
+  mpv_window::handle_mpv_events();
 }
 
 auto mpv_window::try_show() -> void
@@ -100,7 +100,7 @@ auto mpv_window::try_show() -> void
   glfwShowWindow(m_window_handle.get());
 }
 
-auto mpv_window::update() -> void
+auto mpv_window::handle_mpv_events() -> void
 {
   mpv_event* e = nullptr;
   while ((e = mpv_wait_event(m_mpv.get(), 0)) != nullptr
@@ -200,10 +200,15 @@ auto mpv_window::handle_event(event& e) -> void
         e);
 }
 
-auto mpv_window::render() -> bool
+auto mpv_window::render() -> double
 {
+  window::render();
+  handle_mpv_events();
   if (!m_redraw) {
-    return false;
+    // mpv_set_wakeup_callback will wake the loop up,
+    // so one can use the default timeout (or even wait
+    // forever)
+    return window::render();
   }
 
   m_redraw = false;
@@ -220,7 +225,8 @@ auto mpv_window::render() -> bool
                                {MPV_RENDER_PARAM_INVALID, nullptr}};
   mpv_render_context_render(m_render.get(), params);
   swap_buffers();
-  return true;
+  // vsync
+  return -1;
 }
 
 }  // namespace imgv

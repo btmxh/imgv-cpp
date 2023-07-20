@@ -14,6 +14,7 @@ include(cmake/project-is-top-level.cmake)
 include(cmake/variables.cmake)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+option(IMGV_X11 "Enable X11-specific features" OFF)
 
 # ---- Dependencies ----
 
@@ -55,10 +56,12 @@ add_subdirectory(glad)
 
 add_library(
   imgv-cpp_lib OBJECT
+  source/clock.cpp
   source/context.cpp
   source/events.cpp
-  source/root_window.cpp
+  source/gif_window.cpp
   source/mpv_window.cpp
+  source/root_window.cpp
   source/window.cpp
 )
 
@@ -80,6 +83,13 @@ target_link_libraries(imgv-cpp_lib PUBLIC
   fmt::fmt
   Boxer::Boxer
 )
+
+if(IMGV_X11)
+  target_compile_definitions(imgv-cpp_lib PRIVATE IMGV_X11)
+  find_package(X11 REQUIRED)
+  target_link_libraries(imgv-cpp_lib PRIVATE X11::X11)
+  message("Using X11 specific features")
+endif()
 
 # ---- Declare executable ----
 

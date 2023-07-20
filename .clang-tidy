@@ -4,7 +4,7 @@
 # modernize-use-nodiscard: too aggressive, attribute is situationally useful
 # Some personal preferences (this is not going to be a serious project anyway)
 # readability-identifier-length: don't really matter
-# cppcoreguidelines-non-private-member-variables-in-classes: i dont want to make getters for protected fields
+# cppcoreguidelines-non-private-member-variables-in-classes: i don't want to make getters for protected fields
 # google-build-using-namespace: i'm not using namespace std
 # *-avoid-c-arrays, cppcoreguidelines-pro-bounds-array-to-pointer-decay, hicpp-no-array-decay: libmpv stuff
 # cppcoreguidelines-avoid-magic-numbers: idc

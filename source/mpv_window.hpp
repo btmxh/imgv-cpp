@@ -34,8 +34,7 @@ public:
   auto operator=(mpv_window&&) = delete;
 
   auto handle_event(event& e) -> void override;
-  auto update() -> void override;
-  auto render() -> bool override;
+  auto render() -> double override;
 
 private:
   unique_ptr<mpv_handle, mpv_handle_deleter> m_mpv;

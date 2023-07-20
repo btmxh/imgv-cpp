@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deque>
+#include <type_traits>
 
 #include <mpv/client.h>
 #include <mpv/render.h>
@@ -39,13 +40,23 @@ struct change_event
   T value;
 
   template<typename U>
-  auto update(U& property)
+  auto update(U& property) const
   {
     switch (mode) {
       case change_mode::set:
         property = static_cast<U>(value);
+        break;
       case change_mode::add_or_cycle:
-        property = static_cast<U>(value + mode);
+        if constexpr (std::is_same_v<U, bool>) {
+          // consider bool to be an enum of true and false
+          // with cycling property (odd = 1 = true, even = 0 = false)
+          if (value) {
+            property = !property;
+          }
+        } else {
+          property = static_cast<U>(value + property);
+        }
+        break;
       default:;
     }
   }

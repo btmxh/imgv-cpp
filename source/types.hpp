@@ -28,6 +28,7 @@ using std::scoped_lock;
 using std::shared_ptr;
 using std::string;
 using std::string_view;
+using std::tuple;
 using std::unique_ptr;
 using std::variant;
 using std::vector;

@@ -6,6 +6,7 @@
 #include <fmt/core.h>
 #include <nfd.hpp>
 
+#include "gif_window.hpp"
 #include "mpv_window.hpp"
 #include "root_window.hpp"
 
@@ -69,14 +70,16 @@ auto context::open(const char* path) -> void
   } catch (exception& ex) {
     const auto msg = fmt::format("error opening media file '{}'", path);
     boxer::show(
-        msg.c_str(), "imgv error", boxer::Style::Error, boxer::Buttons::OK);
+        ex.what(), msg.c_str(), boxer::Style::Error, boxer::Buttons::OK);
   }
 }
 
 auto context::run() -> void
 {
+  auto last_time = glfwGetTime();
   while (!m_windows.empty()) {
-    // fmt::print("{}\n", glfwGetTime());
+    // fmt::print("{}\n", (glfwGetTime() - last_time) * 1e3);
+    last_time = glfwGetTime();
 
     m_windows.erase(std::remove_if(m_windows.begin(),
                                    m_windows.end(),
@@ -95,22 +98,28 @@ auto context::run() -> void
       }
     }
 
-    auto vsync = false;
+    // 10 seconds at most
+    auto wait_time = 10.0;
     for (auto& window : m_windows) {
-      window->update();
-      vsync |= window->render();
+      auto window_wait_time = window->render();
+      wait_time = std::min(window_wait_time, wait_time);
     }
 
-    if (!vsync) {
-      glfwWaitEventsTimeout(0.05);
-    } else {
+    if (wait_time < 0) {
       glfwPollEvents();
+    } else {
+      glfwWaitEventsTimeout(wait_time);
     }
   }
 }
 
 auto context::create_window(const char* media_path) -> shared_ptr<window>
 {
+  const string_view path {media_path};
+  if (path.rfind(".gif") + 4 == path.size()) {
+    return std::make_shared<gif_window>(m_queue, media_path);
+  };
+
   return std::make_shared<mpv_window>(m_queue, media_path);
 }
 
