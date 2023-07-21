@@ -51,6 +51,7 @@ target_link_libraries(EasyGifReader PRIVATE GIF::GIF)
 set_target_properties(EasyGifReader PROPERTIES CXX_CLANG_TIDY "")
 
 add_subdirectory(glad)
+add_subdirectory(stb)
 
 # ---- Declare library ----
 
@@ -59,8 +60,10 @@ add_library(
   source/clock.cpp
   source/context.cpp
   source/events.cpp
+  source/gl_window.cpp
   source/gif_window.cpp
   source/mpv_window.cpp
+  source/stbi_window.cpp
   source/root_window.cpp
   source/window.cpp
 )
@@ -78,6 +81,7 @@ target_link_libraries(imgv-cpp_lib PUBLIC
   EasyGifReader
   glfw
   nfd
+  stb
   libmpv::libmpv
   Freetype::Freetype
   fmt::fmt

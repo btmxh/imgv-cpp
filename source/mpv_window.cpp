@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "mpv_window.hpp"
 
 #include <fmt/core.h>

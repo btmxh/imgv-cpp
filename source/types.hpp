@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -17,6 +17,7 @@ namespace imgv
 namespace fs = std::filesystem;
 
 using fs::path;
+using std::array;
 using std::exception;
 using std::forward;
 using std::move;

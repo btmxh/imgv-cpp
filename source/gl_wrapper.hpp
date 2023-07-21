@@ -70,6 +70,7 @@ public:
   template<typename... Args>
   static auto create(window* owner, Args&&... args) -> gl_object
   {
+    owner->make_context_current();
     auto handle = Trait::create(*owner, forward<Args>(args)...);
     if (handle == Trait::null_handle()) {
       throw runtime_error(
@@ -139,5 +140,57 @@ using gl_vertex_array = gl_object<vertex_array_trait>;
 using gl_texture = gl_object<texture_trait>;
 using gl_program = gl_object<program_trait>;
 using gl_shader = gl_object<shader_trait>;
+
+inline auto create_shader(window* owner, GLenum type, const GLchar* source)
+    -> gl_shader
+{
+  return owner->use_gl(
+      [=](const GladGLContext& gl)
+      {
+        auto shader = gl_shader::create(owner, type);
+        gl.ShaderSource(*shader, 1, &source, nullptr);
+        gl.CompileShader(*shader);
+
+        GLint i = 0;
+        gl.GetShaderiv(*shader, GL_COMPILE_STATUS, &i);
+        if (i == GL_FALSE) {
+          GLchar buf[256];
+          gl.GetShaderInfoLog(*shader, sizeof(buf), nullptr, buf);
+          throw runtime_error(fmt::format("unable to compile shader: {}", buf));
+        }
+
+        return shader;
+      });
+}
+
+inline auto create_program(window* owner,
+                           const GLchar* vs_src,
+                           const GLchar* fs_src) -> gl_program
+{
+  return owner->use_gl(
+      [=](const GladGLContext& gl)
+      {
+        auto vs = create_shader(owner, GL_VERTEX_SHADER, vs_src);
+        auto fs = create_shader(owner, GL_FRAGMENT_SHADER, fs_src);
+
+        auto program = gl_program::create(owner);
+        gl.AttachShader(*program, *vs);
+        gl.AttachShader(*program, *fs);
+        gl.LinkProgram(*program);
+        GLint i = 0;
+        gl.GetProgramiv(*program, GL_LINK_STATUS, &i);
+        if (i == GL_FALSE) {
+          GLchar buf[256];
+          gl.GetProgramInfoLog(*program, sizeof(buf), nullptr, buf);
+          throw runtime_error(
+              fmt::format("unable to link shader program: {}", buf));
+        }
+
+        gl.DetachShader(*program, *vs);
+        gl.DetachShader(*program, *fs);
+
+        return program;
+      });
+}
 
 }  // namespace imgv

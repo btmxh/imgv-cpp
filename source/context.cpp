@@ -66,7 +66,7 @@ context::context(const vector<const char*>& args, bool& would_run)
 auto context::open(const char* path) -> void
 {
   try {
-    m_windows.push_back(create_window(path));
+    m_windows.push_back(create_window(m_queue, path));
   } catch (exception& ex) {
     const auto msg = fmt::format("error opening media file '{}'", path);
     boxer::show(
@@ -76,11 +76,7 @@ auto context::open(const char* path) -> void
 
 auto context::run() -> void
 {
-  auto last_time = glfwGetTime();
   while (!m_windows.empty()) {
-    // fmt::print("{}\n", (glfwGetTime() - last_time) * 1e3);
-    last_time = glfwGetTime();
-
     m_windows.erase(std::remove_if(m_windows.begin(),
                                    m_windows.end(),
                                    [](const auto& w) { return w->dead(); }),
@@ -111,16 +107,6 @@ auto context::run() -> void
       glfwWaitEventsTimeout(wait_time);
     }
   }
-}
-
-auto context::create_window(const char* media_path) -> shared_ptr<window>
-{
-  const string_view path {media_path};
-  if (path.rfind(".gif") + 4 == path.size()) {
-    return std::make_shared<gif_window>(m_queue, media_path);
-  };
-
-  return std::make_shared<mpv_window>(m_queue, media_path);
 }
 
 }  // namespace imgv

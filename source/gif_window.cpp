@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cmath>
 
 #include "gif_window.hpp"
@@ -6,47 +7,11 @@
 
 namespace imgv
 {
-static auto create_shader(window* owner, GLenum type, const GLchar* source)
-    -> gl_shader
-{
-  return owner->use_gl(
-      [=](const GladGLContext& gl)
-      {
-        auto shader = gl_shader::create(owner, type);
-        gl.ShaderSource(*shader, 1, &source, nullptr);
-        gl.CompileShader(*shader);
-
-        GLint i = 0;
-        gl.GetShaderiv(*shader, GL_COMPILE_STATUS, &i);
-        if (i == GL_FALSE) {
-          GLchar buf[256];
-          gl.GetShaderInfoLog(*shader, sizeof(buf), nullptr, buf);
-          throw runtime_error(fmt::format("unable to compile shader: {}", buf));
-        }
-
-        return shader;
-      });
-}
-
-static auto create_program(window* owner) -> gl_program
-{
-  return owner->use_gl(
-      [=](const GladGLContext& gl)
-      {
-        auto vs = create_shader(owner, GL_VERTEX_SHADER, R"(
-    #version 430 core
-
-    layout(location = 0) out vec2 tex_coords;
-
-    const vec2 vertices[4] = vec2[](
-      vec2(-1,1), vec2(1,1), vec2(-1,-1), vec2(1,-1)
-    );
-    void main() {
-      gl_Position = vec4(vertices[gl_VertexID], 0.0, 1.0);
-      tex_coords = vertices[gl_VertexID] * vec2(0.5, -0.5) + vec2(0.5, 0.5);
-    }
-  )");
-        auto fs = create_shader(owner, GL_FRAGMENT_SHADER, R"(
+gif_window::gif_window(weak_event_queue queue, const char* path)
+    : gl_window {move(queue)}
+    , m_program {create_program(this,
+                                generic_vertex_shader,
+                                R"(
     #version 430 core
 
     layout(location = 0) in vec2 tex_coords;
@@ -59,32 +24,7 @@ static auto create_program(window* owner) -> gl_program
     void main() {
       color = texture(tex, vec3(tex_coords, layer));
     }
-  )");
-
-        auto program = gl_program::create(owner);
-        gl.AttachShader(*program, *vs);
-        gl.AttachShader(*program, *fs);
-        gl.LinkProgram(*program);
-        GLint i = 0;
-        gl.GetProgramiv(*program, GL_LINK_STATUS, &i);
-        if (i == GL_FALSE) {
-          GLchar buf[256];
-          gl.GetProgramInfoLog(*program, sizeof(buf), nullptr, buf);
-          throw runtime_error(
-              fmt::format("unable to link shader program: {}", buf));
-        }
-
-        gl.DetachShader(*program, *vs);
-        gl.DetachShader(*program, *fs);
-
-        return program;
-      });
-}
-
-gif_window::gif_window(weak_event_queue queue, const char* path)
-    : window {move(queue)}
-    , m_program {create_program(this)}
-    , m_vao {gl_vertex_array::create(this)}
+  )")}
     , m_tex {gl_texture::create(this)}
 {
   make_context_current();
@@ -119,25 +59,13 @@ gif_window::gif_window(weak_event_queue queue, const char* path)
     m_delays.push_back(frame.duration().seconds() + last_delay);
   }
 
-  m_gl.GenerateMipmap(GL_TEXTURE_2D_ARRAY);
-  m_gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  m_gl.TexParameteri(
-      GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+  gen_mipmap_and_set_filters(GL_TEXTURE_2D_ARRAY);
+  dump_texture_compress_size(
+      sizeof(decltype(*std::declval<EasyGifReader::Frame>().pixels()))
+          * static_cast<usize>(reader.width() * reader.height()),
+      GL_TEXTURE_2D_ARRAY);
 
-  {
-    GLint size = 0;
-    m_gl.GetTexLevelParameteriv(
-        GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &size);
-    auto orig_size = static_cast<int>(sizeof(i32)) * reader.width()
-        * reader.height() * reader.frameCount();
-    fmt::print("texture compress memory usage: {} -> {}\n", orig_size, size);
-  }
-
-  glfwSetWindowSize(m_window_handle.get(), reader.width(), reader.height());
-  glfwSetWindowAspectRatio(
-      m_window_handle.get(), reader.width(), reader.height());
-  glfwSetWindowTitle(m_window_handle.get(), path);
-  glfwShowWindow(m_window_handle.get());
+  show_window(reader.width(), reader.height(), path);
 }
 
 auto gif_window::handle_event(event& e) -> void
@@ -154,6 +82,7 @@ auto gif_window::handle_event(event& e) -> void
 
 auto gif_window::render() -> double
 {
+  // NOLINTNEXTLINE(bugprone-parent-virtual-call)
   window::render();
   auto time = std::fmod(m_clock.now(), m_delays.back());
   auto itr = std::lower_bound(m_delays.begin(), m_delays.end(), time);

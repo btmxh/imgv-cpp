@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cmath>
+#include <fstream>
 
 #include "window.hpp"
 
@@ -12,6 +14,10 @@
 #  include <X11/Xatom.h>
 #  include <X11/Xlib.h>
 #endif
+
+#include "gif_window.hpp"
+#include "mpv_window.hpp"
+#include "stbi_window.hpp"
 
 namespace imgv
 {
@@ -165,12 +171,22 @@ auto window::swap_buffers() const -> void
   glfwSwapBuffers(m_window_handle.get());
 }
 
+auto window::show_window(int width, int height, const char* title) -> void
+{
+  glfwSetWindowSize(m_window_handle.get(), width, height);
+  glfwSetWindowAspectRatio(m_window_handle.get(), width, height);
+  glfwSetWindowTitle(m_window_handle.get(), title);
+  glfwShowWindow(m_window_handle.get());
+}
+
 auto window_drag_state::update(GLFWwindow* window) -> void
 {
   if (holding) {
     int x = 0, y = 0;
     glfwGetWindowPos(window, &x, &y);
-    glfwSetWindowPos(window, x + static_cast<int>(std::floor(dx)), y + static_cast<int>(std::floor(dy)));
+    glfwSetWindowPos(window,
+                     x + static_cast<int>(std::floor(dx)),
+                     y + static_cast<int>(std::floor(dy)));
     ox += dx;
     oy += dy;
     dx = dy = 0;
@@ -198,6 +214,107 @@ auto window_drag_state::get_monitor_cursor_pos(GLFWwindow* window)
   auto&& [wx, wy] = get_window_pos(window);
   auto&& [cx, cy] = get_cursor_pos(window);
   return std::make_tuple(wx + cx, wy + cy);
+}
+
+using namespace std::literals;
+struct path_checker
+{
+  const char* path;
+  std::ifstream file {};
+
+  constexpr static usize max_header_size = 16;
+  usize header_size = 0;
+  array<char, max_header_size> header {};
+
+  auto check_file_and_open() -> bool
+  {
+    file.open(path);
+    return !file.fail();
+  }
+  auto read_header() -> void
+  {
+    if (file.tellg() != 0) {
+      return;
+    }
+
+    header_size = static_cast<usize>(std::max<std::streamsize>(
+        file.readsome(header.data(), max_header_size), 0));
+  }
+
+  auto check_header(string_view check, usize offset = 0) -> bool
+  {
+    read_header();
+    return memcmp(check.data(), &header.at(offset), check.size()) == 0;
+  }
+
+  auto is_png() -> bool
+  {
+    return check_header("\x89\x50\x4E\x47\x0D\x0A\x1A\x0A"sv);
+  }
+
+  auto is_gif() -> bool
+  {
+    return check_header("GIF87a"sv) || check_header("GIF89a"sv);
+  }
+
+  auto is_jpeg() -> bool
+  {
+    return check_header("\xFF\xD8\xFF\xDB"sv)
+        || check_header("\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01"sv)
+        || check_header("\xFF\xD8\xFF\xEE"sv)
+        || (check_header("\xFF\xD8\xFF\xE1"sv)
+            && check_header("\x45\x78\x69\x66\x00\x00"sv, 6))
+        || check_header("\xFF\xD8\xFF\xE0"sv);
+  }
+
+  auto is_bmp() -> bool { return check_header("BM"); }
+  auto is_psd() -> bool { return check_header("8BPS"); }
+  auto is_hdr() -> bool { return check_header("#?RADIANCE."); }
+
+  auto is_ppm() -> bool
+  {
+    return check_header("\x50\x33\x0A") || check_header("\x50\x36\x0A");
+  }
+
+  auto stbi_supported() -> bool
+  {
+    return is_png() || is_gif() || is_jpeg() || is_bmp() || is_psd() || is_hdr()
+        || is_ppm();
+  }
+};
+
+auto create_window(weak_event_queue queue, const char* path)
+    -> shared_ptr<window>
+{
+  path_checker checker {path};
+  if (checker.check_file_and_open()) {
+    if (checker.is_gif()) {
+      try {
+        fmt::print("opening file using gif_window\n");
+        return std::make_shared<gif_window>(move(queue), path);
+      } catch (std::exception& ex) {
+        fmt::print("warn: unable to display gif file using gif_window\n");
+      }
+    }
+
+    if (checker.stbi_supported()) {
+      try {
+        fmt::print("opening file using stbi_window\n");
+        return std::make_shared<stbi_window>(move(queue), path);
+      } catch (std::exception& ex) {
+        fmt::print("warn: unable to display image file using stbi_window\n");
+      }
+    }
+  }
+
+  try {
+    fmt::print("opening file using mpv_window\n");
+    return std::make_shared<mpv_window>(move(queue), path);
+  } catch (std::exception& ex) {
+    fmt::print("warn: unable to display media file using mpv_window\n");
+  }
+
+  throw runtime_error("unable to open media file");
 }
 
 }  // namespace imgv

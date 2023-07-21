@@ -69,10 +69,13 @@ public:
     return std::invoke(forward<Func>(func), m_gl);
   }
 
-protected:
   auto make_context_current() const -> void;
   static auto make_context_non_current() -> void;
+
+protected:
   auto swap_buffers() const -> void;
+
+  auto show_window(int width, int height, const char* title) -> void;
 
   shared_ptr<root_window> m_root;
   weak_event_queue m_queue;
@@ -81,4 +84,6 @@ protected:
   GladGLContext m_gl {};
   window_drag_state m_drag_state {};
 };
+
+auto create_window(weak_event_queue queue, const char* path) -> shared_ptr<window>;
 }  // namespace imgv

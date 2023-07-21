@@ -3,15 +3,15 @@
 #include <EasyGifReader.h>
 
 // #include "image_texture.hpp"
-#include "clock.hpp"
-#include "gl_wrapper.hpp"
-#include "window.hpp"
-
 #include <limits>
+
+#include "clock.hpp"
+#include "gl_window.hpp"
+#include "gl_wrapper.hpp"
 
 namespace imgv
 {
-class gif_window : public window
+class gif_window : public gl_window
 {
 public:
   gif_window(weak_event_queue queue, const char* path);
@@ -28,7 +28,6 @@ public:
 
 private:
   gl_program m_program;
-  gl_vertex_array m_vao;
   gl_texture m_tex;
   vector<double> m_delays;
   state_clock m_clock;

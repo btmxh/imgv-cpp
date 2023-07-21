@@ -32,6 +32,5 @@ private:
   shared_event_queue m_queue;
 
   auto open(const char* path) -> void;
-  auto create_window(const char* media_path) -> shared_ptr<window>;
 };
 }  // namespace imgv
