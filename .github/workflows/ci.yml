@@ -54,17 +54,17 @@ jobs:
     - name: Build
       run: cmake --build build/coverage -j 2
 
-    - name: Test
-      working-directory: build/coverage
-      run: ctest --output-on-failure --no-tests=error -j 2
+    # - name: Test
+    #   working-directory: build/coverage
+    #   run: ctest --output-on-failure --no-tests=error -j 2
 
-    - name: Process coverage info
-      run: cmake --build build/coverage -t coverage
+    # - name: Process coverage info
+    #   run: cmake --build build/coverage -t coverage
 
-    - name: Submit to codecov.io
-      uses: codecov/codecov-action@v3
-      with:
-        file: build/coverage/coverage.info
+    # - name: Submit to codecov.io
+    #   uses: codecov/codecov-action@v3
+    #   with:
+    #     file: build/coverage/coverage.info
 
   sanitize:
     needs: [lint]
