@@ -12,10 +12,10 @@ class static_image_window : public window
 {
 public:
   template<typename Loader>
-  static_image_window(weak_event_queue queue,
+  static_image_window(context* c,
                       Loader& loader,
                       const char* fragment_shader = static_fragment_shader)
-      : window {move(queue)}
+      : window {c}
       , m_program {create_program(this, static_vertex_shader, fragment_shader)}
       , m_vao {gl_vertex_array::create(this)}
       , m_texture {[&, this]

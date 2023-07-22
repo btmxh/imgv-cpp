@@ -80,8 +80,18 @@ struct seek_event
 {
 };
 
-using event =
-    variant<mpv_render_update_event, play_pause_event, speed_event, seek_event>;
+struct media_open_event
+{
+  vector<string> paths;
+
+  auto handler() -> optional<shared_ptr<window>> { return nullopt; }
+};
+
+using event = variant<mpv_render_update_event,
+                      play_pause_event,
+                      speed_event,
+                      seek_event,
+                      media_open_event>;
 
 inline auto handler(event& e) -> optional<shared_ptr<window>>
 {

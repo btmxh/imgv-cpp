@@ -30,42 +30,23 @@ context::context(const vector<const char*>& args, bool& would_run)
     return;
   }
 
-  would_run = true;
-
   for (const auto& arg : args) {
     open(arg);
   }
 
   if (args.empty()) {
-    NFD::UniquePathSet out_paths;
-    NFD::UniquePathSetPathU8 out_path;
-    switch (NFD::OpenDialogMultiple(out_paths)) {
-      case NFD_ERROR:
-        IMGV_ERROR("unable to open file chooser");
-      case NFD_CANCEL:
-        would_run = false;
-        return;
-      default:;
-    }
-    nfdpathsetsize_t count = 0;
-    if (NFD::PathSet::Count(out_paths, count) == NFD_ERROR) {
-      IMGV_ERROR("unable to get pathset count");
-    }
-    for (nfdpathsetsize_t i = 0; i < count; ++i) {
-      if (NFD::PathSet::GetPath(out_paths, i, out_path) == NFD_ERROR) {
-        fmt::print(stderr, "unable to get path of index {}\n", i);
-        continue;
-      }
-
-      open(out_path.get());
+    for (const auto& path : open_dialog()) {
+      open(path.c_str());
     }
   }
+
+  would_run = !m_windows.empty();
 }
 
 auto context::open(const char* path) -> void
 {
   try {
-    m_windows.push_back(create_window(m_queue, path));
+    m_windows.push_back(create_window(this, path));
   } catch (exception& ex) {
     const auto msg = fmt::format("error opening media file '{}'", path);
     boxer::show(
@@ -82,6 +63,15 @@ auto context::run() -> void
                     m_windows.end());
 
     for (auto e = m_queue->pop(); e.has_value(); e = m_queue->pop()) {
+      if (auto* media_evt = std::get_if<media_open_event>(&*e);
+          media_evt != nullptr)
+      {
+        for (const auto& path : media_evt->paths) {
+          open(path.c_str());
+        }
+
+        continue;
+      }
       if (auto w = handler(*e); w.has_value()) {
         if (w.value()) {
           w->get()->handle_event(*e);
@@ -106,6 +96,34 @@ auto context::run() -> void
       glfwWaitEventsTimeout(wait_time);
     }
   }
+}
+
+auto context::open_dialog() -> vector<string>
+{
+  vector<string> paths;
+  NFD::UniquePathSet out_paths;
+  NFD::UniquePathSetPathU8 out_path;
+  switch (NFD::OpenDialogMultiple(out_paths)) {
+    case NFD_ERROR:
+      IMGV_ERROR("unable to open file chooser");
+    case NFD_CANCEL:
+      return {};
+    default:;
+  }
+  nfdpathsetsize_t count = 0;
+  if (NFD::PathSet::Count(out_paths, count) == NFD_ERROR) {
+    IMGV_ERROR("unable to get pathset count");
+  }
+  for (nfdpathsetsize_t i = 0; i < count; ++i) {
+    if (NFD::PathSet::GetPath(out_paths, i, out_path) == NFD_ERROR) {
+      fmt::print(stderr, "unable to get path of index {}\n", i);
+      continue;
+    }
+
+    paths.emplace_back(out_path.get());
+  }
+
+  return paths;
 }
 
 }  // namespace imgv

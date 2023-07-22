@@ -24,7 +24,7 @@ struct mpv_render_context_deleter
 class mpv_window : public window
 {
 public:
-  mpv_window(weak_event_queue queue, const char* path);
+  mpv_window(context* c, const char* path);
   ~mpv_window() override = default;
 
   mpv_window(const mpv_window&) = delete;

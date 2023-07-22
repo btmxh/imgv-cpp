@@ -25,6 +25,10 @@ public:
   context(const vector<const char*>& args, bool& would_run);
   auto run() -> void;
 
+  auto open_dialog() -> vector<string>;
+
+  auto push_event(event&& e) { m_queue->push(move(e)); }
+
 private:
   nfd m_nfd;
   shared_ptr<root_window> m_root_window;

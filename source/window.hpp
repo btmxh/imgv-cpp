@@ -37,11 +37,13 @@ struct window_drag_state
       -> tuple<double, double>;
 };
 
+class context;
+
 class window : public std::enable_shared_from_this<window>
 {
 public:
   constexpr static i32 default_size = 16;
-  explicit window(weak_event_queue queue);
+  explicit window(context* c);
   virtual ~window() = default;
 
   window(const window&) = delete;
@@ -76,14 +78,13 @@ public:
 protected:
   auto swap_buffers() const -> void;
 
+  context* m_context;
   shared_ptr<root_window> m_root;
-  weak_event_queue m_queue;
   glfw_window m_window_handle;
   std::atomic_bool m_redraw {true}, m_dead {false};
   GladGLContext m_gl {};
   window_drag_state m_drag_state {};
 };
 
-auto create_window(weak_event_queue queue, const char* path)
-    -> shared_ptr<window>;
+auto create_window(context* c, const char* path) -> shared_ptr<window>;
 }  // namespace imgv

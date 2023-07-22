@@ -18,8 +18,8 @@ class animated_image_window : public static_image_window
 public:
   template<typename Func,
            typename = std::enable_if_t<std::is_rvalue_reference_v<Func&&>>>
-  animated_image_window(weak_event_queue queue, Func&& loader)
-      : static_image_window {move(queue), loader, animated_fragment_shader}
+  animated_image_window(context* c, Func&& loader)
+      : static_image_window {c, loader, animated_fragment_shader}
       , m_delays {loader.take_delays()}
   {
   }

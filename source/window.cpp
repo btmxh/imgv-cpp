@@ -15,7 +15,10 @@
 #  include <X11/Xlib.h>
 #endif
 
+#include <thread>
+
 #include "animated_image_window.hpp"
+#include "context.hpp"
 #include "gif.hpp"
 #include "mpv_window.hpp"
 #include "static_image_window.hpp"
@@ -48,9 +51,9 @@ static auto set_x11_window_mode(GLFWwindow* window) -> void
 #endif
 }
 
-window::window(weak_event_queue queue)
-    : m_root(root_window::get())
-    , m_queue {move(queue)}
+window::window(context* c)
+    : m_context {c}
+    , m_root(root_window::get())
 {
   glfwDefaultWindowHints();
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -89,7 +92,7 @@ window::window(weak_event_queue queue)
       });
   glfwSetKeyCallback(
       m_window_handle.get(),
-      [](GLFWwindow* w, int key, int, int action, int)
+      [](GLFWwindow* w, int key, int, int action, int mods)
       {
         auto& self = *reinterpret_cast<window*>(glfwGetWindowUserPointer(w));
         if (action == GLFW_RELEASE) {
@@ -110,6 +113,14 @@ window::window(weak_event_queue queue)
         } else if (key == GLFW_KEY_SPACE) {
           self.push_event(imgv::play_pause_event {
               {self.weak_from_this()}, {change_mode::add_or_cycle, true}});
+        } else if (key == GLFW_KEY_O && (mods & GLFW_MOD_CONTROL)) {
+          std::thread {[&]
+                       {
+                         const auto paths = self.m_context->open_dialog();
+                         self.m_context->push_event(media_open_event {paths});
+                         glfwPostEmptyEvent();
+                       }}
+              .detach();
         }
       });
   glfwSetMouseButtonCallback(
@@ -163,9 +174,7 @@ window::window(weak_event_queue queue)
 
 auto window::push_event(event e) -> void
 {
-  if (auto queue = m_queue.lock(); queue != nullptr) {
-    queue->push(move(e));
-  }
+  m_context->push_event(move(e));
 }
 
 auto window::dead() const -> bool
@@ -306,18 +315,16 @@ struct path_checker
 };
 
 template<typename Loader>
-inline auto open_loader(weak_event_queue queue, Loader loader)
-    -> shared_ptr<window>
+inline auto open_loader(context* c, Loader loader) -> shared_ptr<window>
 {
   if (loader.metadata.animated) {
-    return std::make_shared<animated_image_window>(move(queue), move(loader));
+    return std::make_shared<animated_image_window>(c, move(loader));
   }
 
-  return std::make_shared<static_image_window>(move(queue), loader);
+  return std::make_shared<static_image_window>(c, loader);
 }
 
-auto create_window(weak_event_queue queue, const char* path)
-    -> shared_ptr<window>
+auto create_window(context* c, const char* path) -> shared_ptr<window>
 {
   using namespace std::placeholders;
   path_checker checker {path};
@@ -325,7 +332,7 @@ auto create_window(weak_event_queue queue, const char* path)
     if (checker.is_gif()) {
       try {
         fmt::print("opening file using gif_loader\n");
-        return open_loader(move(queue), gif_loader {path});
+        return open_loader(c, gif_loader {path});
       } catch (std::exception& ex) {
         fmt::print("warn: unable to load gif file using gif_loader\n");
         dump_exception(ex);
@@ -335,7 +342,7 @@ auto create_window(weak_event_queue queue, const char* path)
     if (checker.is_webp()) {
       try {
         fmt::print("opening file using webp_loader\n");
-        return open_loader(move(queue), webp_loader {path});
+        return open_loader(c, webp_loader {path});
       } catch (std::exception& ex) {
         fmt::print("warn: unable to load gif file using webp_loader\n");
         dump_exception(ex);
@@ -345,7 +352,7 @@ auto create_window(weak_event_queue queue, const char* path)
     if (checker.stbi_supported()) {
       try {
         fmt::print("opening file using stbi_loader\n");
-        return open_loader(move(queue), stbi_loader {path});
+        return open_loader(c, stbi_loader {path});
       } catch (std::exception& ex) {
         fmt::print("warn: unable to load gif file using stbi_loader\n");
         dump_exception(ex);
@@ -355,7 +362,7 @@ auto create_window(weak_event_queue queue, const char* path)
 
   try {
     fmt::print("opening file using mpv_window\n");
-    return std::make_shared<mpv_window>(move(queue), path);
+    return std::make_shared<mpv_window>(c, path);
   } catch (std::exception& ex) {
     fmt::print("warn: unable to display media file using mpv_window\n");
     dump_exception(ex);

@@ -16,8 +16,8 @@ enum class reply_data : int
   video_out_params,
 };
 
-mpv_window::mpv_window(weak_event_queue queue, const char* path)
-    : window(move(queue))
+mpv_window::mpv_window(context* c, const char* path)
+    : window(c)
 {
   glfwSetWindowTitle(m_window_handle.get(), path);
   m_mpv = decltype(m_mpv) {mpv_create()};
