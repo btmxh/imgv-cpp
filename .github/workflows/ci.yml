@@ -98,7 +98,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-12, ubuntu-22.04, windows-2022]
+        os: [ubuntu-22.04]
 
     runs-on: ${{ matrix.os }}
 
@@ -119,6 +119,22 @@ jobs:
       run: |
         Add-Content "$env:GITHUB_ENV" 'UseMultiToolTask=true'
         Add-Content "$env:GITHUB_ENV" 'EnforceProcessCountAcrossBuilds=true'
+
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        sudo apt update
+        sudo apt install libglfw3-dev libfreetype-dev libwebp-dev
+        mkdir build
+        cd build
+        git clone https://github.com/btzy/nativefiledialog-extended nfd
+        cd nfd
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && sudo cmake --install build --config Release
+        cd ..
+        git clone https://github.com/aaronmjacobs/Boxer boxer
+        cd boxer
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && sudo cmake --install build --config Release
+        cd ../..
 
     - name: Configure
       shell: pwsh
