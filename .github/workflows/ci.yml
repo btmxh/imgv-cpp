@@ -128,6 +128,9 @@ jobs:
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
         mkdir build
         cd build
+        git clone https://github.com/fmtlib/fmt fmt
+        cd fmt
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && sudo cmake --install build --config Release
         git clone https://github.com/btzy/nativefiledialog-extended nfd
         cd nfd
         cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && sudo cmake --install build --config Release
