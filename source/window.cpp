@@ -145,6 +145,20 @@ window::window(weak_event_queue queue)
           self.m_drag_state.dy = y - self.m_drag_state.oy;
         }
       });
+  glfwSetScrollCallback(
+      m_window_handle.get(),
+      [](GLFWwindow* wnd, double, double sy)
+      {
+        static constexpr int increment = 30;
+        auto dw = static_cast<int>(sy * increment);
+        int w = 0, h = 0;
+        glfwGetWindowSize(wnd, &w, &h);
+        const int nw = w + dw;
+        const int nh = nw * h / w;
+        auto&& [x, y] = window_drag_state::get_window_pos(wnd);
+        glfwSetWindowSize(wnd, nw, nh);
+        glfwSetWindowPos(wnd, x - (nw - w) / 2, y - (nh - h) / 2);
+      });
 }
 
 auto window::push_event(event e) -> void
