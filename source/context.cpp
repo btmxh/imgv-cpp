@@ -6,7 +6,6 @@
 #include <fmt/core.h>
 #include <nfd.hpp>
 
-#include "gif_window.hpp"
 #include "mpv_window.hpp"
 #include "root_window.hpp"
 

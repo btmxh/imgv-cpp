@@ -15,9 +15,11 @@
 #  include <X11/Xlib.h>
 #endif
 
-#include "gif_window.hpp"
+#include "animated_image_window.hpp"
+#include "gif.hpp"
 #include "mpv_window.hpp"
-#include "stbi_window.hpp"
+#include "static_image_window.hpp"
+#include "stbi.hpp"
 
 namespace imgv
 {
@@ -283,26 +285,38 @@ struct path_checker
   }
 };
 
+template<typename Loader>
+inline auto open_loader(weak_event_queue queue, Loader loader)
+    -> shared_ptr<window>
+{
+  if (loader.metadata.animated) {
+    return std::make_shared<animated_image_window>(move(queue), move(loader));
+  }
+
+  return std::make_shared<static_image_window>(move(queue), loader);
+}
+
 auto create_window(weak_event_queue queue, const char* path)
     -> shared_ptr<window>
 {
+  using namespace std::placeholders;
   path_checker checker {path};
   if (checker.check_file_and_open()) {
     if (checker.is_gif()) {
       try {
-        fmt::print("opening file using gif_window\n");
-        return std::make_shared<gif_window>(move(queue), path);
+        fmt::print("opening file using gif_loader\n");
+        return open_loader(move(queue), gif_loader {path});
       } catch (std::exception& ex) {
-        fmt::print("warn: unable to display gif file using gif_window\n");
+        fmt::print("warn: unable to load gif file using gif_loader\n");
       }
     }
 
     if (checker.stbi_supported()) {
       try {
-        fmt::print("opening file using stbi_window\n");
-        return std::make_shared<stbi_window>(move(queue), path);
+        fmt::print("opening file using stbi_loader\n");
+        return open_loader(move(queue), stbi_loader {path});
       } catch (std::exception& ex) {
-        fmt::print("warn: unable to display image file using stbi_window\n");
+        fmt::print("warn: unable to load gif file using stbi_loader\n");
       }
     }
   }

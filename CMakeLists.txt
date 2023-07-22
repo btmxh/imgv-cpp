@@ -60,10 +60,9 @@ add_library(
   source/clock.cpp
   source/context.cpp
   source/events.cpp
-  source/gl_window.cpp
-  source/gif_window.cpp
   source/mpv_window.cpp
-  source/stbi_window.cpp
+  source/static_image_window.cpp
+  source/animated_image_window.cpp
   source/root_window.cpp
   source/window.cpp
 )
