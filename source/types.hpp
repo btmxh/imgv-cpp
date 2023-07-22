@@ -12,6 +12,8 @@
 #include <variant>
 #include <vector>
 
+#include <fmt/core.h>
+
 namespace imgv
 {
 namespace fs = std::filesystem;
@@ -45,7 +47,22 @@ struct overloaded : Ts...
 template<class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
+using u8 = std::uint8_t;
 using i32 = std::int32_t;
 using i64 = std::int64_t;
 using usize = std::size_t;
+
+// NOLINTNEXTLINE(*-macro-*)
+#define IMGV_ERROR(...) std::throw_with_nested(runtime_error(__VA_ARGS__))
+
+inline auto dump_exception(const std::exception& e, usize level = 0) -> void
+{
+  fmt::print("{}{}\n", std::string(level, ' '), e.what());
+  try {
+    std::rethrow_if_nested(e);
+  } catch (const std::exception& nested_ex) {
+    dump_exception(nested_ex, level + 1);
+  } catch (...) {
+  }
+}
 }  // namespace imgv

@@ -28,7 +28,7 @@ struct stbi_loader
             path, &metadata.width, &metadata.height, &num_comps, STBI_default)}
   {
     if (!data) {
-      throw runtime_error("unable to load image via stb_image");
+      IMGV_ERROR("unable to load image via stb_image");
     }
 
     switch (num_comps) {
@@ -53,7 +53,7 @@ struct stbi_loader
         align = 4;
         break;
       default:
-        throw runtime_error("invalid num_comps");
+        IMGV_ERROR("invalid num_comps");
     }
   }
 

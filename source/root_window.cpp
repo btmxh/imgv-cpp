@@ -47,7 +47,7 @@ auto root_window::get() -> shared_ptr<root_window>
 glfw_context::glfw_context()
 {
   if (!glfwInit()) {
-    throw std::runtime_error("unable to initialize GLFW");
+    IMGV_ERROR("unable to initialize GLFW");
   }
 }
 

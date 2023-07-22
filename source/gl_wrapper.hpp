@@ -73,8 +73,7 @@ public:
     owner->make_context_current();
     auto handle = Trait::create(*owner, forward<Args>(args)...);
     if (handle == Trait::null_handle()) {
-      throw runtime_error(
-          fmt::format("unable to create {} object", Trait::type_name()));
+      IMGV_ERROR(fmt::format("unable to create {} object", Trait::type_name()));
     }
 
     return gl_object {owner, handle};
@@ -156,7 +155,7 @@ inline auto create_shader(window* owner, GLenum type, const GLchar* source)
         if (i == GL_FALSE) {
           GLchar buf[256];
           gl.GetShaderInfoLog(*shader, sizeof(buf), nullptr, buf);
-          throw runtime_error(fmt::format("unable to compile shader: {}", buf));
+          IMGV_ERROR(fmt::format("unable to compile shader: {}", buf));
         }
 
         return shader;
@@ -182,8 +181,7 @@ inline auto create_program(window* owner,
         if (i == GL_FALSE) {
           GLchar buf[256];
           gl.GetProgramInfoLog(*program, sizeof(buf), nullptr, buf);
-          throw runtime_error(
-              fmt::format("unable to link shader program: {}", buf));
+          IMGV_ERROR(fmt::format("unable to link shader program: {}", buf));
         }
 
         gl.DetachShader(*program, *vs);

@@ -85,6 +85,7 @@ target_link_libraries(imgv-cpp_lib PUBLIC
   Freetype::Freetype
   fmt::fmt
   Boxer::Boxer
+  WebP::webpdemux
 )
 
 if(IMGV_X11)

@@ -26,10 +26,10 @@ mpv_window::mpv_window(weak_event_queue queue, const char* path)
       || mpv_set_option_string(m_mpv.get(), "input-vo-keyboard", "yes") < 0
       || mpv_set_option(m_mpv.get(), "osc", MPV_FORMAT_FLAG, &i_true))
   {
-    throw runtime_error("unable to set mpv options");
+    IMGV_ERROR("unable to set mpv options");
   }
   if (!m_mpv || mpv_initialize(m_mpv.get()) < 0) {
-    throw std::runtime_error("unable to create & initialize mpv handle");
+    IMGV_ERROR("unable to create & initialize mpv handle");
   }
 
 #ifdef NDEBUG
@@ -54,7 +54,7 @@ mpv_window::mpv_window(weak_event_queue queue, const char* path)
   if (mpv_render_context_create(&context, m_mpv.get(), params) < 0
       && context != nullptr)
   {
-    throw runtime_error("unable to create render context");
+    IMGV_ERROR("unable to create render context");
   }
 
   m_render = decltype(m_render) {context};
@@ -71,7 +71,7 @@ mpv_window::mpv_window(weak_event_queue queue, const char* path)
   mpv_node result {};
   const char* cmd[] = {"loadfile", path, nullptr};
   if (mpv_command_ret(m_mpv.get(), cmd, &result) < 0) {
-    throw runtime_error("unable to open file using mpv");
+    IMGV_ERROR("unable to open file using mpv");
   }
 
   const char* cmd2[] = {"set", "loop", "inf", nullptr};
@@ -83,7 +83,7 @@ mpv_window::mpv_window(weak_event_queue queue, const char* path)
                            MPV_FORMAT_NODE)
       < 0)
   {
-    throw runtime_error("unable to observe video-out-params properties");
+    IMGV_ERROR("unable to observe video-out-params properties");
   }
 
   mpv_set_wakeup_callback(

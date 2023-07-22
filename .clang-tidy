@@ -36,6 +36,7 @@ Checks: "*,\
   -readability-isolate-declaration,\
   -bugprone-easily-swappable-parameters,\
   -fuchsia-multiple-inheritance,\
+  -misc-no-recursion,\
   -misc-non-private-member-variables-in-classes"
 WarningsAsErrors: ''
 CheckOptions:

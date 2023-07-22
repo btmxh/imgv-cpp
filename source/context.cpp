@@ -41,7 +41,7 @@ context::context(const vector<const char*>& args, bool& would_run)
     NFD::UniquePathSetPathU8 out_path;
     switch (NFD::OpenDialogMultiple(out_paths)) {
       case NFD_ERROR:
-        throw runtime_error("unable to open file chooser");
+        IMGV_ERROR("unable to open file chooser");
       case NFD_CANCEL:
         would_run = false;
         return;
@@ -49,7 +49,7 @@ context::context(const vector<const char*>& args, bool& would_run)
     }
     nfdpathsetsize_t count = 0;
     if (NFD::PathSet::Count(out_paths, count) == NFD_ERROR) {
-      throw runtime_error("unable to get pathset count");
+      IMGV_ERROR("unable to get pathset count");
     }
     for (nfdpathsetsize_t i = 0; i < count; ++i) {
       if (NFD::PathSet::GetPath(out_paths, i, out_path) == NFD_ERROR) {

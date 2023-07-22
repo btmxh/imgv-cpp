@@ -20,6 +20,7 @@
 #include "mpv_window.hpp"
 #include "static_image_window.hpp"
 #include "stbi.hpp"
+#include "webp.hpp"
 
 namespace imgv
 {
@@ -64,13 +65,13 @@ window::window(weak_event_queue queue)
                                                   m_root->get_glfw_handle())};
   set_x11_window_mode(m_window_handle.get());
   if (!m_window_handle) {
-    throw std::runtime_error("unable to create window");
+    IMGV_ERROR("unable to create window");
   }
 
   make_context_current();
   glfwSwapInterval(1);
   if (!gladLoadGLContext(&m_gl, glfwGetProcAddress)) {
-    throw std::runtime_error("unable to load OpenGL function pointers");
+    IMGV_ERROR("unable to load OpenGL function pointers");
   }
 
   glfwSetWindowUserPointer(m_window_handle.get(), this);
@@ -231,7 +232,7 @@ struct path_checker
   auto check_file_and_open() -> bool
   {
     file.open(path);
-    return !file.fail();
+    return !file.bad();
   }
   auto read_header() -> void
   {
@@ -275,13 +276,18 @@ struct path_checker
 
   auto is_ppm() -> bool
   {
-    return check_header("\x50\x33\x0A") || check_header("\x50\x36\x0A");
+    return check_header("\x50\x33\x0A"sv) || check_header("\x50\x36\x0A"sv);
   }
 
   auto stbi_supported() -> bool
   {
     return is_png() || is_gif() || is_jpeg() || is_bmp() || is_psd() || is_hdr()
         || is_ppm();
+  }
+
+  auto is_webp() -> bool
+  {
+    return check_header("RIFF"sv) && check_header("WEBP"sv, 8);
   }
 };
 
@@ -308,6 +314,17 @@ auto create_window(weak_event_queue queue, const char* path)
         return open_loader(move(queue), gif_loader {path});
       } catch (std::exception& ex) {
         fmt::print("warn: unable to load gif file using gif_loader\n");
+        dump_exception(ex);
+      }
+    }
+
+    if (checker.is_webp()) {
+      try {
+        fmt::print("opening file using webp_loader\n");
+        return open_loader(move(queue), webp_loader {path});
+      } catch (std::exception& ex) {
+        fmt::print("warn: unable to load gif file using webp_loader\n");
+        dump_exception(ex);
       }
     }
 
@@ -317,6 +334,7 @@ auto create_window(weak_event_queue queue, const char* path)
         return open_loader(move(queue), stbi_loader {path});
       } catch (std::exception& ex) {
         fmt::print("warn: unable to load gif file using stbi_loader\n");
+        dump_exception(ex);
       }
     }
   }
@@ -326,9 +344,10 @@ auto create_window(weak_event_queue queue, const char* path)
     return std::make_shared<mpv_window>(move(queue), path);
   } catch (std::exception& ex) {
     fmt::print("warn: unable to display media file using mpv_window\n");
+    dump_exception(ex);
   }
 
-  throw runtime_error("unable to open media file");
+  IMGV_ERROR("unable to open media file");
 }
 
 }  // namespace imgv
