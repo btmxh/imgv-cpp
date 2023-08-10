@@ -76,6 +76,27 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        sudo apt update
+        sudo apt install libglfw3-dev libfreetype-dev libwebp-dev libmpv-dev libgtk-3-dev
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+        mkdir build
+        cd build
+        git clone https://github.com/fmtlib/fmt fmt
+        cd fmt
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j --target fmt/fast && sudo cmake --install build --config Release
+        cd ..
+        git clone https://github.com/btzy/nativefiledialog-extended nfd
+        cd nfd
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && sudo cmake --install build --config Release
+        cd ..
+        git clone https://github.com/btmxh/Boxer boxer
+        cd boxer
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && sudo cmake --install build --config Release
+        cd ../..
+
     - name: Configure
       run: cmake --preset=ci-sanitize
 
@@ -124,10 +145,13 @@ jobs:
       if: matrix.os == 'ubuntu-22.04'
       run: |
         sudo apt update
-        sudo apt install libglfw3-dev libfreetype-dev libwebp-dev libmpv-dev
+        sudo apt install libglfw3-dev libfreetype-dev libwebp-dev libmpv-dev libgtk-3-dev
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
         mkdir build
         cd build
+        git clone https://github.com/fmtlib/fmt fmt
+        cd fmt
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && sudo cmake --install build --config Release
         git clone https://github.com/btzy/nativefiledialog-extended nfd
         cd nfd
         cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && sudo cmake --install build --config Release
